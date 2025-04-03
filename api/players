@@ -1,0 +1,80 @@
+const router = require("express").Router();
+const prisma = require("../prisma");
+
+module.exports = router;
+
+router.get("/", async (req, res, next) => {
+  try {
+    const players = await prisma.player.findMany();
+    res.json(players);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/", async (req, res, next) => {
+  try {
+    const { name, breed, status } = req.body;
+    if (!name || !breed || !status) {
+      return next({
+        status: 400,
+        message: "Player must have a name, breed, and status.",
+      });
+    }
+    const player = await prisma.player.create({
+      data: { name, breed, status },
+    });
+    res.status(201).json(player);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/:id", async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return next({ status: 400, message: "Invalid player ID" });
+
+    const player = await prisma.player.findUnique({ where: { id } });
+    if (!player) {
+      return next({
+        status: 404,
+        message: `Could not find player with id ${id}.`,
+      });
+    }
+    res.json(player);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put("/:id", async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return next({ status: 400, message: "Invalid player ID" });
+
+    const { status } = req.body;
+    if (!status)
+      return next({ status: 400, message: "Player must have a status." });
+
+    const updatedPlayer = await prisma.player.update({
+      where: { id },
+      data: { status },
+    });
+    res.json(updatedPlayer);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.delete("/:id", async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return next({ status: 400, message: "Invalid player ID" });
+
+    await prisma.player.delete({ where: { id } });
+    res.sendStatus(204);
+  } catch (error) {
+    next(error);
+  }
+});
